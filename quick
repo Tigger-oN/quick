@@ -240,8 +240,8 @@ cmdQ () {
     if [ -z "${n}" ]
     then
         # FIXME: Should there be an option to make this note? That will move
-		# this from just a viewer to an editor as well. Q_PAGER can be set to
-		# a text editor, but that only works for already made notes.
+        # this from just a viewer to an editor as well. Q_PAGER can be set to
+        # a text editor, but that only works for already made notes.
         printf "\nUnable to locate that quick note. You may need to write one first.\n\n"
         exit
     fi
