@@ -1,6 +1,6 @@
 # quick
 
-Quickly load you have written.
+Quickly load a note you have written.
 
     quick [note | list V | version]
 
@@ -31,9 +31,9 @@ a completly different one with the same name.
 
 Rules for the notes:
 
- Must end in ".q"
- Must be a plain text file
- Must be save in a search directory
+- Must end in ".q"
+- Must be a plain text file
+- Must be save in a search directory
 
 For example: you could keep track of birthdays in a file called "bdays.q",
 saved to one of the search directories. To view the note you would type:
