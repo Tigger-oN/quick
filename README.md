@@ -19,7 +19,7 @@ The preset search directories for notes are:
     ${HOME}/bin/.quick
     /usr/local/share/quick
 
-The profile varible `${PAGER}` (if set) will used to view the notes. If not set
+The profile varible `${PAGER}` (if set) will be used to view the notes. If not set
 or invalid, then "less" (if found) or "more" will be used.
 
 Limitations and rules.

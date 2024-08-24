@@ -43,7 +43,7 @@ usage () {
     printf "The preset search directories for notes are:\n"
     printf "\n"
     printf "%s\n" "${sd}"
-    printf "The profile varible \${PAGER} (if set) will used to view the notes. If not set\n"
+    printf "The profile varible \${PAGER} (if set) will be used to view the notes. If not set\n"
     printf "or invalid, then \"less\" (if found) or \"more\" will be used.\n"
     printf "\n"
     printf "Limitations and rules.\n"
