@@ -44,6 +44,8 @@ The following run command file can be used to set a few options.
 
     ${HOME}/.quick/.quickrc
 
+And the options are:
+
     Q_PATH      : Set your own search directories.
     Q_PAGER     : Use a different text viewer (for example: vim)
 

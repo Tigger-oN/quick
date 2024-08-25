@@ -12,7 +12,7 @@ Q_PAGER=""
 # A list of all the quick files will be populated here.
 Q_LIST=""
 # Used to keep track of the script version.
-Q_VERSION="2024-08-24"
+Q_VERSION="2024-08-25"
 # The RC file
 Q_RC="${HOME}/.quick/.quickrc"
 # Default paths for searching
@@ -26,55 +26,56 @@ usage () {
 "
     done
 
-    printf "\n"
-    printf "Quickly load a note you have written.\n"
-    printf "\n"
-    printf " %s [note | list | V | version]\n" "${0##*/}"
-    printf "\n"
-    printf "At least one option must be passed.\n"
-    printf "\n"
-    printf " note        : The first unique part or the full name of the note to be loaded.\n"
-    printf " list        : List all the stored notes and their location. Obviously you can\n"
-    printf "               not have a note called \"list\".\n"
-    printf " V | version : Show the version of the script and some other information.\n"
-    printf "\n"
-    printf "Default settings and values.\n"
-    printf "\n"
-    printf "The preset search directories for notes are:\n"
-    printf "\n"
-    printf "%s\n" "${sd}"
-    printf "The profile varible \${PAGER} (if set) will be used to view the notes. If not set\n"
-    printf "or invalid, then \"less\" (if found) or \"more\" will be used.\n"
-    printf "\n"
-    printf "Limitations and rules.\n"
-    printf "\n"
-    printf "If there are two notes with the same name in different search directories, the\n"
-    printf "note in the first directory will be shown. This is helpful if you have a system\n" 
-    printf "wide note but would like to have your own extended or modified version, or just\n"
-    printf "a completly different one with the same name.\n"
-    printf "\n"
-    printf "Rules for the notes:\n"
-    printf "\n"
-    printf " Must end in \".q\"\n"
-    printf " Must be a plain text file\n"
-    printf " Must be save in a search directory\n"
-    printf "\n"
-    printf "For example: you could keep track of birthdays in a file called \"bdays.q\",\n"
-    printf "saved to one of the search directories. To view the note you would type:\n"
-    printf "\n"
-    printf " %s bdays\n" "${0##*/}"
-    printf "\n"
-    printf "The following run command file can be used to set a few options.\n"
-    printf "\n"
-    printf " %s\n" "${Q_RC}"
-    printf "\n"
-    printf " Q_PATH      : Set your own search directories.\n"
-    printf " Q_PAGER     : Use a different text viewer (for example: vim)\n"
-    printf "\n"
-    printf "\n"
-    printf "Version      : %s\n" "${Q_VERSION}"
-    printf "Set pager    : %s\n" "${Q_PAGER##*/}"
-    printf "\n"
+    out="
+Quickly load a note you have written.
+
+ ${0##*/} [note | l | list | V | version]
+
+At least one option must be passed.
+
+ note        : The first unique part or the full name of the note to be loaded.
+ l | list    : List all the stored notes and their location. Obviously you can
+               not have a note called \"l\" or \"list\".
+ V | version : Show the version of the script and some other information.
+ 
+Default settings and values.
+ 
+The preset search directories for notes are:
+
+${sd}
+The profile varible \${PAGER} (if set) will be used to view the notes. If not set
+or invalid, then \"less\" (if found) or \"more\" will be used.
+
+Limitations and rules.
+
+If there are two notes with the same name in different search directories, the
+note in the first directory will be shown. This is helpful if you have a system
+wide note but would like to have your own extended or modified version, or just
+a completly different one with the same name.
+ 
+Rules for the notes:
+ 
+ Must end in \".q\"
+ Must be a plain text file
+ Must be save in a search directory
+ 
+For example: you could keep track of birthdays in a file called \"bdays.q\", saved
+to one of the search directories. To view the note you would type:
+ 
+ ${0##*/} bdays
+
+The following run command file can be used to set a few options.
+ 
+ ${Q_RC}
+
+ Q_PATH      : Set your own search directories.
+ Q_PAGER     : Use a different text viewer (for example: vim)
+
+
+Version      : ${Q_VERSION}
+Set pager    : ${Q_PAGER##*/}
+"
+	printf "%s\n" "${out}"
 
     exit
 }
@@ -94,7 +95,7 @@ firstNote () {
 # Return the list of notes, unsorted.
 getQList () {
     checkQPathValid
-    Q_LIST=`find ${Q_PATH} -type f -name *.q | awk -F\/ '{printf " %-24s : %s\n", substr($NF,1,length($NF)-2), $0}'`
+    Q_LIST=`find ${Q_PATH} -type f -name "*.q" | awk -F\/ '{printf " %-24s : %s\n", substr($NF,1,length($NF)-2), $0}'`
 }
 
 # Make sure we have values for the key items.
@@ -138,7 +139,7 @@ checkDefaults () {
         then
             # Really? Is that even possible.
             printf "\n"
-            printf "Unable to locate a page (text viewer). This is a massive surprise. You will\n"
+            printf "Unable to locate a pager (text viewer). This is a massive surprise. You will\n"
             printf "need to install either \"less\" or \"more\" or set the Q_PAGER varible in the\n"
             printf "following run command file:\n"
             printf "\n"
@@ -261,15 +262,16 @@ cmdVersion () {
     getQList
     c=`printf "${Q_LIST}" | grep -c '^'`
 
-    printf "\n"
-    printf "Script version    : %s\n" "${Q_VERSION}"
-    printf "Note pager        : %s\n" "${Q_PAGER}"
-    printf "Total notes found : %s\n" "${c}"
-    printf "\n"
-    printf "Search directories:\n"
-    printf "\n"
-    printf "%s" "${sd}"
-    printf "\n"
+	out="
+Script version    : ${Q_VERSION}
+Note pager        : ${Q_PAGER}
+Total notes found : ${c}
+
+Search directories:
+
+${sd}
+"
+    printf "%s" "${out}"
 
     exit
 }
@@ -295,7 +297,7 @@ fi
 # Request check
 case "${1}" in
     -h|--help|-H|-HELP|-?) usage; return;;
-    list) cmdList; return;;
+    l|list) cmdList; return;;
     V|version) cmdVersion; return;;
     *) cmdQ "${1}"; return;;
 esac
