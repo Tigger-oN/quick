@@ -75,7 +75,7 @@ The following run command file can be used to set a few options.
 Version      : ${Q_VERSION}
 Set pager    : ${Q_PAGER##*/}
 "
-	printf "%s\n" "${out}"
+    printf "%s\n" "${out}"
 
     exit
 }
@@ -223,12 +223,12 @@ cmdQ () {
     n=""
     for p in ${Q_PATH}
     do
-		# Check for an exact match first, then a fuzzy search
+        # Check for an exact match first, then a fuzzy search
         tmp=`find "${p}" -name "${1}.q"`
-		if [ -z "${tmp}" ]
-		then
-	        tmp=`find "${p}" -name "${1}*.q"`
-		fi
+        if [ -z "${tmp}" ]
+        then
+            tmp=`find "${p}" -name "${1}*.q"`
+        fi
         c=`printf "${tmp}" | grep -c '^'`
         if [ ${c} -gt 1 ]
         then
@@ -267,7 +267,7 @@ cmdVersion () {
     getQList
     c=`printf "${Q_LIST}" | grep -c '^'`
 
-	out="
+    out="
 Script version    : ${Q_VERSION}
 Note pager        : ${Q_PAGER}
 Total notes found : ${c}
