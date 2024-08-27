@@ -12,7 +12,7 @@ Q_PAGER=""
 # A list of all the quick files will be populated here.
 Q_LIST=""
 # Used to keep track of the script version.
-Q_VERSION="2024-08-25"
+Q_VERSION="2024-08-27"
 # The RC file
 Q_RC="${HOME}/.quick/.quickrc"
 # Default paths for searching
@@ -57,7 +57,7 @@ Rules for the notes:
  
  Must end in \".q\"
  Must be a plain text file
- Must be save in a search directory
+ Must be saved in a search directory
  
 For example: you could keep track of birthdays in a file called \"bdays.q\", saved
 to one of the search directories. To view the note you would type:
@@ -223,7 +223,12 @@ cmdQ () {
     n=""
     for p in ${Q_PATH}
     do
-        tmp=`find "${p}" -name "${1}*.q"`
+		# Check for an exact match first, then a fuzzy search
+        tmp=`find "${p}" -name "${1}.q"`
+		if [ -z "${tmp}" ]
+		then
+	        tmp=`find "${p}" -name "${1}*.q"`
+		fi
         c=`printf "${tmp}" | grep -c '^'`
         if [ ${c} -gt 1 ]
         then
