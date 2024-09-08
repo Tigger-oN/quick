@@ -7,7 +7,7 @@ Quickly load a note you have written.
 At least one option must be passed.
 
     note        : The first unique part or the full name of the note to be loaded.
-    list        : List all the stored notes and their location. Obviously you can
+    l | list    : List all the stored notes and their location. Obviously you can
                   not have a note called "list".
     V | version : Show the version of the script and some other information.
 

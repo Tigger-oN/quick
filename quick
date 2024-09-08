@@ -11,8 +11,8 @@ Q_PATH=""
 Q_PAGER=""
 # A list of all the quick files will be populated here.
 Q_LIST=""
-# Used to keep track of the script version.
-Q_VERSION="2024-08-27"
+# Used to keep track of the script version. yyyymmdd format for changes.
+Q_VERSION="20240908"
 # The RC file
 Q_RC="${HOME}/.quick/.quickrc"
 # Default paths for searching
@@ -301,7 +301,7 @@ fi
 
 # Request check
 case "${1}" in
-    -h|--help|-H|-HELP|-?) usage; return;;
+    -h|--help|-H|-HELP) usage; return;;
     l|list) cmdList; return;;
     V|version) cmdVersion; return;;
     *) cmdQ "${1}"; return;;
