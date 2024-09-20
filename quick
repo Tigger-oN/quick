@@ -2,29 +2,42 @@
 #
 # Helper script for viewing a collection of notes.
 #
-# TODO: Maybe... Is there a need to be able to load more than one note page?
-#
 # Where the quick notes are stored.
 Q_PATH=""
 # Which PAGER / text viewer to use? If left blank, we default to $PAGER, still
 # blank, check for less, then more. If neither are found we are very surprised. 
 Q_PAGER=""
+# What editor to use with new notes?
+Q_EDITOR=""
 # A list of all the quick files will be populated here.
 Q_LIST=""
 # Used to keep track of the script version. yyyymmdd format for changes.
-Q_VERSION="20240908"
+Q_VERSION="20240920"
 # The RC file
 Q_RC="${HOME}/.quick/.quickrc"
 # Default paths for searching
 Q_PATH_DEFAULT="${HOME}/.quick ${HOME}/bin/.quick /usr/local/share/quick"
+# Will hold the search path(s) for displaying.
+Q_PATH_DISPLAY=""
 
 usage () {
-    sd=""
     for l in ${Q_PATH_DEFAULT}
     do
         sd="${sd} $l
 "
     done
+    # Check for a custom search path
+    subGetPathDisplay
+    custom_path=""
+    if [ -n "${Q_PATH_DISPLAY}" -a "${sd}" != "${Q_PATH_DISPLAY}" ]
+    then
+        custom_path="
+The following custom directory or directories have been set for searching:
+
+${Q_PATH_DISPLAY}
+Only the notes saved to your custom path(s) will be loaded. 
+"
+    fi
 
     out="
 Quickly load a note you have written.
@@ -34,17 +47,14 @@ Quickly load a note you have written.
 At least one option must be passed.
 
  note        : The first unique part or the full name of the note to be loaded.
- l | list    : List all the stored notes and their location. Obviously you can
-               not have a note called \"l\" or \"list\".
+ l | list    : List all the stored notes and their location.
  V | version : Show the version of the script and some other information.
- 
-Default settings and values.
  
 The preset search directories for notes are:
 
-${sd}
-The profile varible \${PAGER} (if set) will be used to view the notes. If not set
-or invalid, then \"less\" (if found) or \"more\" will be used.
+${sd}${custom_path}
+The profile varaible \${PAGER} (if set) will be used to view the notes. If not
+set or invalid, then \"less\" (if found) or \"more\" will be used.
 
 Limitations and rules.
 
@@ -64,32 +74,37 @@ to one of the search directories. To view the note you would type:
  
  ${0##*/} bdays
 
-The following run command file can be used to set a few options.
+In the example above, if \"bdays.q\" did not exist you will be asked if you
+would like to create a new note. The file will be saved to first directory in
+your search lists.
+
+The following run command file can be edited to set a few options.
  
  ${Q_RC}
 
- Q_PATH      : Set your own search directories.
- Q_PAGER     : Use a different text viewer (for example: vim)
+The options that can be set in the run command file are:
 
+ Q_EDITOR  : Set an editor for new notes. Defaults to \"vim\" then \"vi\".
+ Q_PAGER   : Use a different text viewer. For example: \"vim\".
+ Q_PATH    : Set your own search directories.
 
-Version      : ${Q_VERSION}
-Set pager    : ${Q_PAGER##*/}
+The following note names will clash with the command line options. For this
+reason you can not have a note with these names and filenames:
+
+ l         : l.q
+ list      : list.q
+ V         : V.q
+ version   : version.q
+
+Information:
+
+ Version   : ${Q_VERSION}
+ Editor    : ${Q_EDITOR##*/}
+ Pager     : ${Q_PAGER##*/}
 "
     printf "%s\n" "${out}"
 
     exit
-}
-firstNote () {
-    printf "To make your first note:\n"
-    printf "\n"
-    if [ ! -d "${HOME}/.quick" ]
-    then
-        printf " mkdir ~/.quick\n"
-    fi
-    printf " <text editor> ~/.quick/first.q\n"
-    printf " save, then quit the editor\n"
-    printf "\n"
-    printf "You will then be able to view your first note.\n"
 }
 
 # Return the list of notes, unsorted.
@@ -106,50 +121,9 @@ checkDefaults () {
         Q_PATH="${Q_PATH_DEFAULT}"
     fi
     # Q_PAGER
-    tmp=""
-    if [ -n "${Q_PAGER}" ]
-    then
-        tmp=`command -v "${Q_PAGER}"`
-        if [ -z "${tmp}" ]
-        then
-            printf "\n"
-            printf "Your requested pager can not be located. Was looking for:\n"
-            printf "\n"
-            printf " %s\n" "${Q_PAGER}"
-            printf "\n"
-            printf "If the pager is valid, please set the varible Q_PAGER to the full path of the\n"
-            printf "application.\n"
-            printf "\n"
-            exit
-        fi
-    else
-        if [ -n "${PAGER}" ]
-        then
-            tmp=`command -v ${PAGER}`
-        fi
-        if [ -z "${tmp}" ]
-        then
-            tmp=`command -v less`
-        fi
-        if [ -z "${tmp}" ]
-        then
-            tmp=`command -v more`
-        fi
-        if [ -z "${tmp}" ]
-        then
-            # Really? Is that even possible.
-            printf "\n"
-            printf "Unable to locate a pager (text viewer). This is a massive surprise. You will\n"
-            printf "need to install either \"less\" or \"more\" or set the Q_PAGER varible in the\n"
-            printf "following run command file:\n"
-            printf "\n"
-            printf " %s\n" "${Q_RS}"
-            printf "\n"
-            exit
-        fi
-    fi
-
-    Q_PAGER="${tmp}"
+    subGetPager
+    # Q_EDITOR
+    subGetEditor
 }
 
 # Check the search directories are valid
@@ -164,12 +138,13 @@ checkQPathValid () {
     done
     if [ -z "${tmp}" ]
     then
-        printf "\n"
-        printf "Unable to locate any quick search directories. This is a surprise.\n"
-        printf "\n"
-        firstNote
-        printf "\n"
-        exit
+        subGetPathDisplay
+        printf "\nUnable to locate any quick search directories. This is a surprise. Is it\n\
+possible you have a read only system or have a set an invalid path to Q_PATH\n\
+in the run command file?\n\n\
+Was looking for the following:\n\n\
+%s\n" "${Q_PATH_DISPLAY}"
+        exit 1
     fi
     Q_PATH=${tmp}
 }
@@ -193,9 +168,46 @@ checkSetup () {
 # location. If there is a space in the directory path you will need to escape
 # it as a space is used as the seperator.
 #Q_PATH=\"${Q_PATH_DEFAULT}\"
+#
+# What editor to use for new notes. If not set, the seach order will be:
+#  vim, vi
+#Q_EDITOR=\"\"
 "
         printf "${rc}" > "${Q_RC}"
     fi
+}
+# Create a new note in the first search directory
+cmdEdit () {
+    if [ -z "${1}" ]
+    then
+        # Should not happen
+        exit 1
+    fi
+    # Need to know the location to save the file
+    sp=""
+    for p in ${Q_PATH}
+    do
+        sp="${p}"
+        break;
+    done
+    # Write access will be required for sp
+    if [ ! -d "${sp}" ]
+    then
+        printf "\nThe search path is not a directory. Was looking at:\n\n\
+ %s\n\
+\nPlease edit the Q_PATH variable to point to at least one writable directory.\n\n" "${sp}"
+        exit 1
+    fi
+    if [ ! -w "${sp}" ]
+    then
+        printf "\nUnable to write to the first search path directory. Was looking at:\n\n\
+ %s\n\
+\nPlease adjust the write permissions on this directory or edit the Q_PATH
+variable to point to at least one writable directory.\n\n" "${sp}"
+        exit 1
+    fi
+    # Editor should have been checked already
+    ${Q_EDITOR} "${sp}/${1}.q"
 }
 
 # Get a list of all the quick notes, sort and present.
@@ -203,16 +215,15 @@ cmdList () {
     getQList
     if [ -z "${Q_LIST}" ]
     then
-        printf "\nUnable to locate any quick files. Very unexpected.\n\n"
-        firstNote
-        printf "\n"
+        printf "\nUnable to locate any quick notes. You can create your first note with:\n\n\
+ %s FirstNote\n\n\
+This will create a note called \"FirstNote\".\n\n" "${0##*/}"
         exit
     else
         Q_LIST=`printf "%s" "${Q_LIST}" | sort`
-        printf "\nFound the following quick files. You can view any with:\n"
-        printf "\n ${0##*/} name\n"
-        printf "\n%s\n" "${Q_LIST}"
-        printf "\n"
+        printf "\nFound the following quick notes. You can view any with:\n\n\
+ %s name\n\n\
+%s\n\n" "${0##*/}" "${Q_LIST}"
     fi
     exit
 }
@@ -233,9 +244,8 @@ cmdQ () {
         if [ ${c} -gt 1 ]
         then
             tmp=`printf "${tmp}" | awk -F\/ '{printf " %-24s : %s\n", substr($NF,1,length($NF)-2), $0}'`
-            printf "\nThe request was too ambiguous. You will need to type more of the note name.\n"
-            printf "\n%s\n" "${tmp}"
-            printf "\n"
+            printf "\nThe request was ambiguous. You will need to type more of the note name.\n\
+\n%s\n\n" "${tmp}"
             exit
         elif [ ${c} -eq 1 ]
         then
@@ -245,40 +255,125 @@ cmdQ () {
     done
     if [ -z "${n}" ]
     then
-        # FIXME: Should there be an option to make this note? That will move
-        # this from just a viewer to an editor as well. Q_PAGER can be set to
-        # a text editor, but that only works for already made notes.
-        printf "\nUnable to locate that quick note. You may need to write one first.\n\n"
-        exit
+        # No note found. Offer the option to make one.
+        printf "\nUnable to locate that quick note.\n\n\
+Would you like to create a note called \"%s\"? (Y/n) " "${1}"
+        read ans
+        if [ "${ans}" = "" -o "${ans}" = "Y" -o "${ans}" = "y" ]
+        then
+            cmdEdit "${1}"
+        else
+            printf "\nAll done.\n\n"
+            exit
+        fi
+    else
+        # A note was found.
+        ${Q_PAGER} "${n}"
     fi
-    # A note was found.
-    ${Q_PAGER} "${n}"
 }
 
 # Script version and some more details.
 cmdVersion () {
-    sd=""
-    for l in ${Q_PATH}
-    do
-        sd="${sd} $l
-"
-    done
-
     getQList
+    subGetPathDisplay
     c=`printf "${Q_LIST}" | grep -c '^'`
-
     out="
-Script version    : ${Q_VERSION}
-Note pager        : ${Q_PAGER}
-Total notes found : ${c}
+ Version     : ${Q_VERSION}
+ Editor      : ${Q_EDITOR##*/}
+ Pager       : ${Q_PAGER##*/}
+ Notes found : ${c}
 
-Search directories:
+Search path(s) for notes:
 
-${sd}
+${Q_PATH_DISPLAY}
 "
     printf "%s" "${out}"
-
     exit
+}
+
+subGetEditor () {
+    if [ -n "${Q_EDITOR}" ]
+    then
+        # An editor has been set, but is it valid
+        if [ ! -f "${Q_EDITOR}" ]
+        then
+            # Not a full path. Need to check it.
+            tmp=`command -v "${Q_EDITOR}"`
+            if [ -n "${tmp}" ]
+            then
+                Q_EDITOR="${tmp}"
+            else
+                printf "\nAn editor has been set with \"Q_EDITOR\" but the application can not be located.\n\n\
+Was looking for: \"${Q_EDITOR}\"\n\n"
+                exit 1
+            fi
+        fi
+    else
+        # check for vim the vi
+        Q_EDITOR=`command -v vim`
+        if [ -z "${Q_EDITOR}" ]
+        then
+            Q_EDITOR=`command -v vi`
+        fi
+        if [ -z "${Q_EDITOR}" ]
+        then
+            printf "\nThis is a surprise. Unable to locate either \"vim\" or \"vi\" on your system.\n\n\
+Please edit the \"Q_EDITOR\" variable in the following run command file:\n\n\
+ %s\n\n\
+An editor is required for new notes.\n\n" "${Q_RC}"
+            exit 1
+        fi
+    fi
+}
+subGetPager () {
+    tmp=""
+    if [ -n "${Q_PAGER}" ]
+    then
+        tmp=`command -v "${Q_PAGER}"`
+        if [ -z "${tmp}" ]
+        then
+            printf "\nYour requested pager can not be located. Was looking for:\n\n\
+ %s\n\n\
+If the pager is valid, please set the variable Q_PAGER to the full path of the\n\
+application.\n\n" "${Q_PAGER}"
+            exit 1
+        fi
+    else
+        if [ -n "${PAGER}" ]
+        then
+            tmp=`command -v ${PAGER}`
+        fi
+        if [ -z "${tmp}" ]
+        then
+            tmp=`command -v less`
+        fi
+        if [ -z "${tmp}" ]
+        then
+            tmp=`command -v more`
+        fi
+        if [ -z "${tmp}" ]
+        then
+            # Really? Is that even possible.
+            printf "\nUnable to locate a pager (text viewer). This is a massive surprise. You will\n\
+need to install either \"less\" or \"more\" or set the Q_PAGER variable in the\n\
+following run command file to a text viewer:\n\n\
+ %s\n\n" "${Q_RS}"
+            exit 1
+        fi
+    fi
+    Q_PAGER="${tmp}"
+}
+subGetPathDisplay () {
+    tmp="${Q_PATH_DEFAULT}"
+    if [ -n "${Q_PATH}" ]
+    then
+        tmp="${Q_PATH}"
+    fi
+    for l in ${tmp}
+    do
+        Q_PATH_DISPLAY="${Q_PATH_DISPLAY} $l
+"
+    done
 }
 
 # Basic checks
